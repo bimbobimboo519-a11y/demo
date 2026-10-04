@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard | Achievers University</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="portal-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">AU</div>
+        <div><strong style="font-size:.92rem">Achievers Portal</strong><br><small style="opacity:.8">Student</small></div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
+        <a href="#" data-page="profile">👤 My Profile</a>
+        <a href="#" data-page="courses">📚 Course Forms</a>
+        <a href="#" data-page="results">📈 My Results</a>
+        <a href="#" data-page="payments">💳 My Payments</a>
+        <a href="#" data-page="hostel">🏠 Hostel</a>
+        <a href="#" data-page="email">✉️ School Mail</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="sidebarUser" style="margin-bottom:.4rem;font-weight:600"></div>
+        <button class="btn btn-sm btn-outline" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    <div class="main-content">
+      <div class="portal-topbar">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <strong id="pageTitle">Dashboard</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:.9rem">
+          <span id="topUserName"></span>
+          <div class="avatar" id="topAvatar" style="width:34px;height:34px;font-size:.85rem"></div>
+        </div>
+      </div>
+      <div class="portal-body" id="content"></div>
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    const session = requireAuth('student');
+    if (!session) throw new Error('redirect');
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('show');
+    }
+    function logout() { clearSession(); location.href = '../login.html'; }
+
+    function renderDashboard() {
+      const { user, student, db } = getStudentProfile();
+      document.getElementById('sidebarUser').textContent = user.first_name + ' ' + user.last_name;
+      document.getElementById('topUserName').textContent = user.first_name + ' ' + user.last_name;
+      document.getElementById('topAvatar').textContent = (user.first_name[0] + user.last_name[0]).toUpperCase();
+
+      const regs = db.registrations.filter(r => r.student_id === student.id);
+      const first = regs.filter(r => { const c = db.courses.find(x => x.id === r.course_id); return c && c.semester === 'First'; });
+      const second = regs.filter(r => { const c = db.courses.find(x => x.id === r.course_id); return c && c.semester === 'Second'; });
+      const firstUnits = first.reduce((s, r) => s + (db.courses.find(c => c.id === r.course_id)?.units || 0), 0);
+      const secondUnits = second.reduce((s, r) => s + (db.courses.find(c => c.id === r.course_id)?.units || 0), 0);
+
+      const pays = db.payments.filter(p => p.student_id === student.id);
+      const totalPaid = pays.filter(p => p.status === 'Paid').reduce((s, p) => s + p.amount, 0);
+      const outstanding = pays.filter(p => p.status === 'Pending').reduce((s, p) => s + p.amount, 0);
+      const pendingCount = pays.filter(p => p.status === 'Pending').length;
+      const lastPay = pays.find(p => p.status === 'Paid');
+
+      const medicalIncomplete = !student.blood_group || !student.genotype;
+      const emailReq = db.email_requests.filter(e => e.student_id === student.id).slice(-1)[0];
+
+      let banners = '';
+      if (medicalIncomplete) {
+        banners += `<div class="alert-banner warning"><div><strong>❤️ Medical profile incomplete</strong><br><small>Blood group and/or genotype missing from your record.</small></div><button class="btn btn-sm btn-gold" onclick="showPage('profile')">Update</button></div>`;
+      }
+      if (emailReq && emailReq.status === 'Pending') {
+        banners += `<div class="alert-banner danger"><div><strong>✉️ Official email request pending</strong><br><small>Your request is being processed.</small></div><button class="btn btn-sm btn-danger" onclick="showPage('email')">View</button></div>`;
+      }
+
+      document.getElementById('content').innerHTML = `
+        <div class="profile-banner">
+          <div class="avatar">${(user.first_name[0]+user.last_name[0]).toUpperCase()}</div>
+          <div class="profile-info" style="flex:1">
+            <h2>${user.first_name} ${user.last_name}</h2>
+            <p>${student.level} · ${student.programme} · Undergraduate</p>
+          </div>
+          <button class="btn btn-sm btn-ghost" onclick="showPage('profile')">View profile →</button>
+        </div>
+        ${banners}
+        <div class="stats-row">
+          <div class="stat-box"><label>CGPA</label><div class="value">${student.cgpa > 0 ? student.cgpa.toFixed(2) : 'N/A'}</div></div>
+          <div class="stat-box"><label>Level</label><div class="value">${student.level}</div></div>
+          <div class="stat-box"><label>Session</label><div class="value" style="font-size:.95rem">${student.entry_session}</div></div>
+          <div class="stat-box"><label>Outstanding</label><div class="value orange">₦${outstanding.toLocaleString()}</div></div>
+          <div class="stat-box"><label>Enrollment</label><div class="value orange">${student.enrollment_status}</div></div>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-header"><h3>Course Registration — 2025/2026</h3><a href="#" onclick="showPage('courses');return false" style="font-size:.84rem;color:var(--green)">Register →</a></div>
+            <div class="panel-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+                <div class="semester-box">
+                  <h4>First Semester <span>${firstUnits}/18 units</span></h4>
+                  <div class="progress-bar"><div class="fill" style="width:${Math.min(100,firstUnits/18*100)}%"></div></div>
+                  <small class="text-muted">${first.length} courses registered</small>
+                </div>
+                <div class="semester-box">
+                  <h4>Second Semester <span>${secondUnits}/17 units</span></h4>
+                  <div class="progress-bar"><div class="fill" style="width:${Math.min(100,secondUnits/17*100)}%"></div></div>
+                  <small class="text-muted">${second.length} courses registered</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>Academic Profile Snapshot</h3></div>
+            <div class="panel-body" style="font-size:.88rem">
+              <div style="display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)"><span class="text-muted">Matric</span><strong>${student.matric}</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)"><span class="text-muted">Status</span><strong class="text-success">${student.academic_status}</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)"><span class="text-muted">Programme</span><strong>${student.programme}</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)"><span class="text-muted">Department</span><strong>${student.department}</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:.35rem 0"><span class="text-muted">Graduation</span><strong>${student.projected_graduation}</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>My Payments</h3><a href="#" onclick="showPage('payments');return false" style="font-size:.84rem;color:var(--green)">View all →</a></div>
+          <div class="panel-body">
+            <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin:0">
+              <div class="stat-box"><label>Outstanding</label><div class="value">₦${outstanding.toLocaleString()}</div></div>
+              <div class="stat-box"><label>Total Paid</label><div class="value green">₦${totalPaid.toLocaleString()}</div></div>
+              <div class="stat-box"><label>Pending</label><div class="value">${pendingCount}</div></div>
+              <div class="stat-box"><label>Last Payment</label><div class="value" style="font-size:.9rem">${lastPay ? lastPay.paid_at : '—'}</div></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function showPage(page) {
+      document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`[data-page="${page}"]`);
+      if (link) link.classList.add('active');
+      document.getElementById('pageTitle').textContent = link ? link.textContent.trim() : page;
+      closeSidebar();
+
+      if (page === 'dashboard') { renderDashboard(); return; }
+
+      const { user, student, db } = getStudentProfile();
+
+      if (page === 'profile') {
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>My Profile</h3></div><div class="panel-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.3rem">
+              <div><h4 style="color:var(--green);margin-bottom:.8rem">Personal</h4>
+                <p><strong>Name:</strong> ${user.first_name} ${user.last_name}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Phone:</strong> ${user.phone||'—'}</p>
+                <p><strong>Matric:</strong> ${student.matric}</p>
+              </div>
+              <div><h4 style="color:var(--green);margin-bottom:.8rem">Academic</h4>
+                <p><strong>Level:</strong> ${student.level}</p>
+                <p><strong>Programme:</strong> ${student.programme}</p>
+                <p><strong>Department:</strong> ${student.department}</p>
+                <p><strong>Faculty:</strong> ${student.faculty}</p>
+              </div>
+            </div>
+            <hr style="margin:1.3rem 0;border:none;border-top:1px solid var(--border)">
+            <h4 style="color:var(--green);margin-bottom:.8rem">Medical Information</h4>
+            <div style="display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap">
+              <div class="form-group" style="margin:0"><label>Blood Group</label>
+                <select id="bloodGroup" class="form-control">${['','A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b=>`<option value="${b}" ${student.blood_group===b?'selected':''}>${b||'Select'}</option>`).join('')}</select>
+              </div>
+              <div class="form-group" style="margin:0"><label>Genotype</label>
+                <select id="genotype" class="form-control">${['','AA','AS','SS','AC','SC'].map(g=>`<option value="${g}" ${student.genotype===g?'selected':''}>${g||'Select'}</option>`).join('')}</select>
+              </div>
+              <button class="btn btn-green" onclick="saveMedical()">Save</button>
+            </div>
+            <div id="medAlert" class="hidden mt-2"></div>
+          </div></div>`;
+        return;
+      }
+
+      if (page === 'courses') {
+        const available = db.courses.filter(c => c.level === student.level && (c.department === student.department || c.department === 'General Studies'));
+        const registered = db.registrations.filter(r => r.student_id === student.id);
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>Course Registration — 2025/2026</h3></div><div class="panel-body">
+            <h4 style="margin-bottom:.7rem">Registered</h4>
+            <table class="table"><thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Sem</th><th></th></tr></thead>
+            <tbody>${registered.length ? registered.map(r => {
+              const c = db.courses.find(x => x.id === r.course_id);
+              return `<tr><td><strong>${c.code}</strong></td><td>${c.title}</td><td>${c.units}</td><td>${c.semester}</td>
+              <td><button class="btn btn-sm btn-danger" onclick="dropCourse(${c.id})">Drop</button></td></tr>`;
+            }).join('') : '<tr><td colspan="5" class="text-center text-muted">No courses yet</td></tr>'}</tbody></table>
+            <h4 style="margin:1.3rem 0 .7rem">Available</h4>
+            <table class="table"><thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Sem</th><th></th></tr></thead>
+            <tbody>${available.map(c => {
+              const reg = registered.find(r => r.course_id === c.id);
+              return `<tr><td><strong>${c.code}</strong></td><td>${c.title}</td><td>${c.units}</td><td>${c.semester}</td>
+              <td>${reg ? '<span class="badge badge-green">Registered</span>' : `<button class="btn btn-sm btn-green" onclick="regCourse(${c.id})">Register</button>`}</td></tr>`;
+            }).join('')}</tbody></table>
+          </div></div>`;
+        return;
+      }
+
+      if (page === 'results') {
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>Semester Results</h3></div><div class="panel-body">
+            <p class="mb-2">CGPA: <strong>N/A (100 Level – no results yet)</strong></p>
+            <p class="text-muted text-center" style="padding:2rem">No results published yet for your level.</p>
+          </div></div>`;
+        return;
+      }
+
+      if (page === 'payments') {
+        const pays = db.payments.filter(p => p.student_id === student.id);
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>My Payments</h3></div><div class="panel-body">
+            <div style="display:flex;gap:.7rem;margin-bottom:1.3rem;flex-wrap:wrap">
+              <button class="btn btn-green" onclick="makePayment('School Fees',450000)">Pay School Fees (₦450,000)</button>
+              <button class="btn btn-green" onclick="makePayment('Hostel Fee',120000)">Pay Hostel (₦120,000)</button>
+              <button class="btn btn-gold" onclick="makePayment('Acceptance Fee',50000)">Pay Acceptance (₦50,000)</button>
+            </div>
+            <table class="table"><thead><tr><th>Type</th><th>Amount</th><th>Reference</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>${pays.map(p => `<tr><td>${p.type}</td><td>₦${p.amount.toLocaleString()}</td><td><code>${p.reference}</code></td>
+              <td><span class="badge ${p.status==='Paid'?'badge-green':'badge-gold'}">${p.status}</span></td>
+              <td>${p.paid_at||'—'}</td></tr>`).join('') || '<tr><td colspan="5" class="text-center">No payments</td></tr>'}</tbody></table>
+          </div></div>`;
+        return;
+      }
+
+      if (page === 'hostel') {
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>Hostel Accommodation</h3></div><div class="panel-body">
+            <p class="mb-2">Apply for on-campus hostel for the current session.</p>
+            <div class="cards-grid">
+              <div class="card"><div class="card-body"><h3>Male Hall A</h3><p class="meta">4-bed · ₦120,000</p><button class="btn btn-sm btn-green mt-1" onclick="makePayment('Hostel Fee',120000)">Apply & Pay</button></div></div>
+              <div class="card"><div class="card-body"><h3>Female Hall B</h3><p class="meta">4-bed · ₦120,000</p><button class="btn btn-sm btn-green mt-1" onclick="makePayment('Hostel Fee',120000)">Apply & Pay</button></div></div>
+              <div class="card"><div class="card-body"><h3>Premium Suite</h3><p class="meta">2-bed · ₦250,000</p><button class="btn btn-sm btn-green mt-1" onclick="makePayment('Hostel Fee',250000)">Apply & Pay</button></div></div>
+            </div>
+          </div></div>`;
+        return;
+      }
+
+      if (page === 'email') {
+        document.getElementById('content').innerHTML = `
+          <div class="panel"><div class="panel-header"><h3>Request Official School Email</h3></div><div class="panel-body">
+            <p class="mb-2">Your official Achievers email will be used for academic communications.</p>
+            <button class="btn btn-green" onclick="requestEmail()">Request Official Email</button>
+            <div id="emailAlert" class="hidden mt-2"></div>
+          </div></div>`;
+        return;
+      }
+    }
+
+    function regCourse(id) {
+      const db = getDB();
+      const { student } = getStudentProfile();
+      if (db.registrations.find(r => r.student_id === student.id && r.course_id === id)) { alert('Already registered'); return; }
+      db.registrations.push({ id: Date.now(), student_id: student.id, course_id: id });
+      saveDB(db);
+      showPage('courses');
+    }
+    function dropCourse(id) {
+      const db = getDB();
+      const { student } = getStudentProfile();
+      db.registrations = db.registrations.filter(r => !(r.student_id === student.id && r.course_id === id));
+      saveDB(db);
+      showPage('courses');
+    }
+    function makePayment(type, amount) {
+      const db = getDB();
+      const { student } = getStudentProfile();
+      const ref = 'AU-' + type.substring(0,3).toUpperCase() + '-' + Date.now();
+      db.payments.push({ id: Date.now(), student_id: student.id, type, amount, status: 'Paid', reference: ref, paid_at: new Date().toISOString().slice(0,10) });
+      db.payments.forEach(p => { if (p.student_id === student.id && p.type === type && p.status === 'Pending') p.status = 'Paid'; });
+      saveDB(db);
+      alert('Payment successful (demo)\nReference: ' + ref);
+      showPage('payments');
+    }
+    function requestEmail() {
+      const db = getDB();
+      const { user, student } = getStudentProfile();
+      const email = user.first_name.toLowerCase() + '.' + user.last_name.toLowerCase().replace(/\s/g,'') + '@student.achievers.edu.ng';
+      db.email_requests.push({ id: Date.now(), student_id: student.id, email, status: 'Pending' });
+      saveDB(db);
+      const el = document.getElementById('emailAlert');
+      el.className = 'alert alert-success mt-2';
+      el.textContent = 'Request submitted. Suggested: ' + email;
+      el.classList.remove('hidden');
+    }
+    function saveMedical() {
+      const db = getDB();
+      const { student } = getStudentProfile();
+      const st = db.students.find(s => s.id === student.id);
+      st.blood_group = document.getElementById('bloodGroup').value;
+      st.genotype = document.getElementById('genotype').value;
+      saveDB(db);
+      const el = document.getElementById('medAlert');
+      el.className = 'alert alert-success mt-2';
+      el.textContent = 'Medical profile updated.';
+      el.classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.sidebar-nav a').forEach(a => {
+      a.addEventListener('click', e => { e.preventDefault(); showPage(a.dataset.page); });
+    });
+    renderDashboard();
+  </script>
+</body>
+</html>

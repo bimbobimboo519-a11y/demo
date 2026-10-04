@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Achievers University</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">AU</div>
+        <h1>ACHIEVERS UNIVERSITY</h1>
+        <p>University Management System</p>
+      </div>
+      <div style="text-align:center;margin-bottom:1.3rem">
+        <div style="width:52px;height:52px;background:#fef9c3;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem">🔒</div>
+      </div>
+
+      <div id="loginForm">
+        <div id="loginAlert" class="hidden"></div>
+        <div class="form-group">
+          <label>Username or email</label>
+          <input type="email" id="email" class="form-control" placeholder="yourname@student.achievers.edu.ng">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" class="form-control" placeholder="••••••••">
+        </div>
+        <div class="form-row">
+          <label style="display:flex;align-items:center;gap:.35rem;font-weight:400"><input type="checkbox"> Remember me</label>
+          <a href="#" style="color:var(--gold)">Forgot password?</a>
+        </div>
+        <button type="button" class="btn btn-green" onclick="doLogin()">Sign in</button>
+        <p class="text-center mt-2" style="font-size:.78rem;color:var(--text-soft)">🛡️ Secured single sign-on</p>
+      </div>
+
+      <div id="setPasswordForm" class="hidden">
+        <div class="alert alert-info">First login detected. Please create your password.</div>
+        <div class="form-group"><label>Email</label><input type="email" id="setEmail" class="form-control" readonly></div>
+        <div class="form-group"><label>Create Password</label><input type="password" id="newPassword" class="form-control" placeholder="Min. 6 characters"></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword" class="form-control"></div>
+        <div id="setPassAlert" class="hidden"></div>
+        <button type="button" class="btn btn-green" onclick="doSetPassword()">Create Password & Sign in</button>
+      </div>
+
+      <div style="margin-top:1.4rem;padding-top:.9rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text-soft)">
+        <strong>Demo Accounts:</strong><br>
+        Student: <code>taiwo.boluwatife@student.achievers.edu.ng</code> / password123<br>
+        First-login: <code>demo.student@student.achievers.edu.ng</code><br>
+        Staff: <code>staff@achievers.edu.ng</code> / password123
+      </div>
+      <p class="text-center mt-2"><a href="index.html">← Back to Homepage</a></p>
+    </div>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    function showAlert(el, msg, type) {
+      el.className = 'alert alert-' + type;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    function doLogin() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { showAlert(document.getElementById('loginAlert'), 'Enter email and password', 'error'); return; }
+      const res = login(email, password);
+      if (res.firstLogin) {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('setPasswordForm').classList.remove('hidden');
+        document.getElementById('setEmail').value = res.email;
+        return;
+      }
+      if (res.error) { showAlert(document.getElementById('loginAlert'), res.error, 'error'); return; }
+      if (res.user.role === 'student') location.href = 'student/dashboard.html';
+      else location.href = 'staff/dashboard.html';
+    }
+    function doSetPassword() {
+      const email = document.getElementById('setEmail').value;
+      const p1 = document.getElementById('newPassword').value;
+      const p2 = document.getElementById('confirmPassword').value;
+      if (p1 !== p2) { showAlert(document.getElementById('setPassAlert'), 'Passwords do not match', 'error'); return; }
+      const res = setPassword(email, p1);
+      if (res.error) { showAlert(document.getElementById('setPassAlert'), res.error, 'error'); return; }
+      if (res.user.role === 'student') location.href = 'student/dashboard.html';
+      else location.href = 'staff/dashboard.html';
+    }
+    document.getElementById('password').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+  </script>
+</body>
+</html>

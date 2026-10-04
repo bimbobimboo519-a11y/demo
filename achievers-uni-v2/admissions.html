@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admissions | Achievers University</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="main-nav">
+      <a href="index.html" class="logo"><div class="logo-icon">AU</div><div>Achievers University</div></a>
+      <button class="nav-toggle">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html" admissions>About</a></li>
+        <li><a href="programmes.html" admissions>Programmes</a></li>
+        <li><a href="news.html" admissions>News</a></li>
+        <li><a href="admissions.html" class="active" admissions>Admissions</a></li>
+        <li><a href="contact.html" admissions>Contact</a></li>
+        <li><a href="login.html" class="btn btn-primary btn-sm">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+  <section class="hero" style="padding:2.8rem 1.25rem">
+    <div style="max-width:900px;margin:0 auto;text-align:center">
+      <h1 style="font-family:var(--font)">Admissions</h1>
+    </div>
+  </section>
+  <section class="section" id="mainContent"></section>
+  <footer class="site-footer"><div class="footer-bottom">© 2026 Achievers University, Owo.</div></footer>
+  <script src="js/app.js"></script>
+  <script>
+    const content = {
+      about: `<div style="max-width:720px;margin:0 auto"><h2 style="font-family:var(--font);color:var(--green-deep);margin-bottom:1rem">About Achievers University</h2>
+        <p style="margin-bottom:1rem">Established in 2007 and located at KM 1, Idasen-Ute Road, Owo, Ondo State. The first private university in Ondo and Ekiti States.</p>
+        <p style="margin-bottom:1rem"><strong>Vision:</strong> To be the best University in Africa and one of the best in the World.</p>
+        <p style="margin-bottom:1rem"><strong>Mission:</strong> To produce competent, self-reliant and globally relevant graduates.</p>
+        <p><strong>Motto:</strong> “Knowledge, Integrity and Leadership”</p></div>`,
+      programmes: `<div class="cards-grid">
+        <div class="card"><div class="card-body"><span class="badge badge-green">Medicine</span><h3 style="margin-top:.5rem">MBBS – Medicine & Surgery</h3><p class="meta">6 years</p></div></div>
+        <div class="card"><div class="card-body"><span class="badge badge-green">Pharmacy</span><h3 style="margin-top:.5rem">Pharm.D – Doctor of Pharmacy</h3><p class="meta">6 years</p></div></div>
+        <div class="card"><div class="card-body"><span class="badge badge-green">Nursing</span><h3 style="margin-top:.5rem">B.NSc. Nursing Science</h3><p class="meta">5 years</p></div></div>
+        <div class="card"><div class="card-body"><span class="badge badge-gold">Engineering</span><h3 style="margin-top:.5rem">B.Eng. Electrical / Computer / Mechanical / Civil</h3><p class="meta">5 years</p></div></div>
+        <div class="card"><div class="card-body"><span class="badge badge-gold">Law</span><h3 style="margin-top:.5rem">LL.B. Bachelor of Laws</h3><p class="meta">5 years</p></div></div>
+        <div class="card"><div class="card-body"><span class="badge badge-green">Sciences</span><h3 style="margin-top:.5rem">B.Sc. Computer Science, Microbiology, Geology…</h3><p class="meta">4 years</p></div></div>
+      </div><p class="text-center mt-2 text-muted">JAMB cut-off: 150 (higher for Medicine)</p>`,
+      news: '',
+      admissions: `<div style="max-width:720px;margin:0 auto">
+        <h2 style="font-family:var(--font);color:var(--green-deep);margin-bottom:1rem">Admissions 2026/2027</h2>
+        <p style="margin-bottom:1rem">Applications are open for undergraduate and postgraduate programmes.</p>
+        <h3 style="margin:1rem 0 .5rem">UTME Requirements</h3>
+        <ul style="line-height:1.9;margin-bottom:1rem"><li>Minimum JAMB score of 150 (higher for Medicine)</li><li>Five O'Level credits including English and Mathematics</li></ul>
+        <h3 style="margin:1rem 0 .5rem">How to Apply</h3>
+        <ol style="line-height:1.9"><li>Visit apply.achievers.edu.ng</li><li>Create an account and complete the form</li><li>Attend screening at the University Registry, Owo</li></ol>
+        <div class="alert alert-warning" style="margin-top:1.5rem"><strong>Beware of fraudsters!</strong> Only pay through official portals.</div>
+      </div>`,
+      contact: `<div class="cards-grid">
+        <div class="card"><div class="card-body"><h3>📍 Address</h3><p>KM 1, Idasen-Ute Road,<br>P.M.B 1030, Owo,<br>Ondo State, Nigeria.</p></div></div>
+        <div class="card"><div class="card-body"><h3>📞 Phone</h3><p>+234 803 936 6046<br>+234 806 026 6505</p></div></div>
+        <div class="card"><div class="card-body"><h3>✉️ Email</h3><p>admissions@achievers.edu.ng</p></div></div>
+        <div class="card"><div class="card-body"><h3>🕐 Hours</h3><p>Mon–Sat: 9:00 AM – 5:00 PM</p></div></div>
+      </div>`
+    };
+    if ('admissions' === 'news') {
+      const db = getDB();
+      document.getElementById('mainContent').innerHTML = '<div class="cards-grid">' + db.news.map(n => `
+        <div class="card"><div class="card-body">
+          <span class="badge badge-green">${n.category}</span>
+          <h3 style="margin-top:.5rem">${n.title}</h3>
+          <p class="meta">${n.date}</p>
+          <p>${n.excerpt}</p>
+          <details style="margin-top:.6rem"><summary style="cursor:pointer;color:var(--green);font-weight:600">Read full</summary>
+          <p style="margin-top:.5rem">${n.content}</p></details>
+        </div></div>`).join('') + '</div>';
+    } else {
+      document.getElementById('mainContent').innerHTML = content['admissions'] || '';
+    }
+  </script>
+</body>
+</html>

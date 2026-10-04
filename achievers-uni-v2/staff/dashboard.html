@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Dashboard | Achievers University</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="portal-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">AU</div>
+        <div><strong style="font-size:.92rem">Achievers Portal</strong><br><small style="opacity:.8">Staff</small></div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
+        <a href="#" data-page="profile">👤 My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="sidebarUser" style="margin-bottom:.4rem;font-weight:600"></div>
+        <button class="btn btn-sm btn-outline" onclick="clearSession();location.href='../login.html'">Logout</button>
+      </div>
+    </aside>
+    <div class="overlay" id="overlay" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show')"></div>
+    <div class="main-content">
+      <div class="portal-topbar">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')">☰</button>
+          <strong id="pageTitle">Dashboard</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:.9rem">
+          <span id="topUserName"></span>
+          <div class="avatar" id="topAvatar" style="width:34px;height:34px;font-size:.85rem"></div>
+        </div>
+      </div>
+      <div class="portal-body" id="content"></div>
+    </div>
+  </div>
+  <script src="../js/app.js"></script>
+  <script>
+    const session = requireAuth('staff');
+    if (!session) throw new Error('redirect');
+    const { user, staff } = getStaffProfile();
+    document.getElementById('sidebarUser').textContent = user.first_name + ' ' + user.last_name;
+    document.getElementById('topUserName').textContent = user.first_name + ' ' + user.last_name;
+    document.getElementById('topAvatar').textContent = (user.first_name[0] + user.last_name[0]).toUpperCase();
+
+    function render() {
+      document.getElementById('content').innerHTML = `
+        <div class="profile-banner">
+          <div class="avatar">${(user.first_name[0]+user.last_name[0]).toUpperCase()}</div>
+          <div class="profile-info" style="flex:1">
+            <h2>${user.first_name} ${user.last_name}</h2>
+            <p>${staff.designation} · ${staff.department}</p>
+          </div>
+        </div>
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-box"><label>Staff ID</label><div class="value" style="font-size:.95rem">${staff.staff_id}</div></div>
+          <div class="stat-box"><label>Department</label><div class="value" style="font-size:.9rem">${staff.department}</div></div>
+          <div class="stat-box"><label>Faculty</label><div class="value" style="font-size:.85rem">${staff.faculty}</div></div>
+          <div class="stat-box"><label>Employed</label><div class="value" style="font-size:.95rem">${staff.employment_date}</div></div>
+        </div>
+        <div class="panel"><div class="panel-header"><h3>Profile</h3></div><div class="panel-body">
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Phone:</strong> ${user.phone||'—'}</p>
+          <p><strong>Designation:</strong> ${staff.designation}</p>
+        </div></div>`;
+    }
+    document.querySelectorAll('.sidebar-nav a').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-nav a').forEach(x => x.classList.remove('active'));
+        a.classList.add('active');
+        document.getElementById('pageTitle').textContent = a.textContent.trim();
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('show');
+        render();
+      });
+    });
+    render();
+  </script>
+</body>
+</html>
